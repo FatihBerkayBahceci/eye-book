@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+    bootstrap="tests/bootstrap-standalone.php"
+    backupGlobals="false"
+    colors="true"
+    convertErrorsToExceptions="true"
+    convertNoticesToExceptions="true"
+    convertWarningsToExceptions="true"
+    processIsolation="false"
+    stopOnFailure="false"
+    verbose="true">
+    
+    <testsuites>
+        <testsuite name="Eye-Book Simple Tests">
+            <file>./tests/unit/test-eye-book-basic.php</file>
+            <file>./tests/unit/test-eye-book-database-simple.php</file>
+            <file>./tests/unit/test-eye-book-encryption-simple.php</file>
+            <file>./tests/unit/test-eye-book-performance-simple.php</file>
+            <file>./tests/unit/test-eye-book-security-simple.php</file>
+        </testsuite>
+    </testsuites>
+    
+    <filter>
+        <whitelist>
+            <directory suffix=".php">./includes/</directory>
+            <directory suffix=".php">./admin/</directory>
+            <directory suffix=".php">./public/</directory>
+            <exclude>
+                <directory suffix=".php">./tests/</directory>
+                <directory suffix=".php">./vendor/</directory>
+            </exclude>
+        </whitelist>
+    </filter>
+    
+    <php>
+        <const name="EYE_BOOK_TEST_MODE" value="true"/>
+        <const name="EYE_BOOK_SKIP_ENCRYPTION_IN_TESTS" value="false"/>
+    </php>
+</phpunit>
