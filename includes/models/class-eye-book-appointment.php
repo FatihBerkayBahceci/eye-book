@@ -199,6 +199,49 @@ class Eye_Book_Appointment {
     }
 
     /**
+     * Create new appointment
+     *
+     * @param array $data Appointment data
+     * @return int|bool Appointment ID on success, false on failure
+     * @since 1.0.0
+     */
+    public function create($data = array()) {
+        foreach ($data as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
+        $this->id = null; // Ensure new record
+        return $this->save();
+    }
+
+    /**
+     * Update existing appointment
+     *
+     * @param array $data Appointment data
+     * @return bool Success status
+     * @since 1.0.0
+     */
+    public function update($data = array()) {
+        foreach ($data as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
+        return $this->save();
+    }
+
+    /**
+     * Get appointment ID
+     *
+     * @return int Appointment ID
+     * @since 1.0.0
+     */
+    public function get_id() {
+        return $this->id;
+    }
+
+    /**
      * Delete appointment
      *
      * @return bool Success status
@@ -689,5 +732,84 @@ class Eye_Book_Appointment {
         }
 
         return $appointments;
+    }
+
+    /**
+     * Count appointments with optional filters
+     *
+     * @param array $args Query arguments
+     * @return int Appointment count
+     * @since 1.0.0
+     */
+    public static function count_appointments($args = array()) {
+        global $wpdb;
+
+        $defaults = array(
+            'patient_id' => '',
+            'provider_id' => '',
+            'location_id' => '',
+            'status' => '',
+            'date_from' => '',
+            'date_to' => '',
+            'search' => ''
+        );
+
+        $args = wp_parse_args($args, $defaults);
+
+        $where_clauses = array('1=1'); // Base condition
+        $where_values = array();
+
+        if ($args['patient_id']) {
+            $where_clauses[] = 'patient_id = %d';
+            $where_values[] = intval($args['patient_id']);
+        }
+
+        if ($args['provider_id']) {
+            $where_clauses[] = 'provider_id = %d';
+            $where_values[] = intval($args['provider_id']);
+        }
+
+        if ($args['location_id']) {
+            $where_clauses[] = 'location_id = %d';
+            $where_values[] = intval($args['location_id']);
+        }
+
+        if ($args['status']) {
+            if (is_array($args['status'])) {
+                $placeholders = implode(',', array_fill(0, count($args['status']), '%s'));
+                $where_clauses[] = "status IN ($placeholders)";
+                $where_values = array_merge($where_values, $args['status']);
+            } else {
+                $where_clauses[] = 'status = %s';
+                $where_values[] = $args['status'];
+            }
+        }
+
+        if ($args['date_from']) {
+            $where_clauses[] = 'start_datetime >= %s';
+            $where_values[] = $args['date_from'];
+        }
+
+        if ($args['date_to']) {
+            $where_clauses[] = 'start_datetime <= %s';
+            $where_values[] = $args['date_to'];
+        }
+
+        if ($args['search']) {
+            $where_clauses[] = '(notes LIKE %s OR chief_complaint LIKE %s)';
+            $search_term = '%' . $wpdb->esc_like($args['search']) . '%';
+            $where_values[] = $search_term;
+            $where_values[] = $search_term;
+        }
+
+        $where_clause = implode(' AND ', $where_clauses);
+
+        $query = "SELECT COUNT(*) FROM " . EYE_BOOK_TABLE_APPOINTMENTS . " WHERE $where_clause";
+
+        if (!empty($where_values)) {
+            $query = $wpdb->prepare($query, $where_values);
+        }
+
+        return $wpdb->get_var($query);
     }
 }

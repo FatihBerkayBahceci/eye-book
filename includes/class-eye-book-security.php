@@ -92,6 +92,45 @@ class Eye_Book_Security {
     }
 
     /**
+     * Get client IP address safely
+     *
+     * @return string Client IP address
+     * @since 1.0.0
+     */
+    public static function get_client_ip() {
+        // Check for various headers that might contain the real IP
+        $ip_headers = array(
+            'HTTP_CF_CONNECTING_IP',     // Cloudflare
+            'HTTP_CLIENT_IP',            // Proxy
+            'HTTP_X_FORWARDED_FOR',      // Load balancer/proxy
+            'HTTP_X_FORWARDED',          // Proxy
+            'HTTP_X_CLUSTER_CLIENT_IP',  // Cluster
+            'HTTP_FORWARDED_FOR',        // Proxy
+            'HTTP_FORWARDED',            // Proxy
+            'REMOTE_ADDR'                // Standard
+        );
+        
+        foreach ($ip_headers as $header) {
+            if (!empty($_SERVER[$header])) {
+                $ip = $_SERVER[$header];
+                
+                // Handle comma-separated IPs (proxy chains)
+                if (strpos($ip, ',') !== false) {
+                    $ip = trim(explode(',', $ip)[0]);
+                }
+                
+                // Validate IP address
+                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                    return $ip;
+                }
+            }
+        }
+        
+        // Fallback to REMOTE_ADDR even if it's private/reserved
+        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    }
+
+    /**
      * Extend authentication cookie expiration for staff users
      *
      * @param int $expiration
@@ -472,42 +511,6 @@ class Eye_Book_Security {
         
         $status = sanitize_text_field($status);
         return in_array($status, $valid_statuses) ? $status : 'scheduled';
-    }
-
-    /**
-     * Get client IP address
-     *
-     * @return string
-     * @since 1.0.0
-     */
-    public function get_client_ip() {
-        $ip_fields = array(
-            'HTTP_CLIENT_IP',
-            'HTTP_X_FORWARDED_FOR',
-            'HTTP_X_FORWARDED',
-            'HTTP_X_CLUSTER_CLIENT_IP',
-            'HTTP_FORWARDED_FOR',
-            'HTTP_FORWARDED',
-            'REMOTE_ADDR'
-        );
-        
-        foreach ($ip_fields as $field) {
-            if (!empty($_SERVER[$field])) {
-                $ip = $_SERVER[$field];
-                
-                // Handle comma-separated IPs
-                if (strpos($ip, ',') !== false) {
-                    $ip = trim(explode(',', $ip)[0]);
-                }
-                
-                // Validate IP
-                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                    return $ip;
-                }
-            }
-        }
-        
-        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
 
     /**

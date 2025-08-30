@@ -257,6 +257,55 @@ class Eye_Book_Patient {
     }
 
     /**
+     * Create patient
+     *
+     * @param array $data Patient data
+     * @return bool|int Patient ID on success, false on failure
+     * @since 1.0.0
+     */
+    public function create($data = array()) {
+        // Set properties from data
+        foreach ($data as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
+        
+        // Clear the ID to ensure new record
+        $this->id = null;
+        
+        return $this->save();
+    }
+
+    /**
+     * Update patient
+     *
+     * @param array $data Patient data
+     * @return bool|int Patient ID on success, false on failure
+     * @since 1.0.0
+     */
+    public function update($data = array()) {
+        // Set properties from data
+        foreach ($data as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
+        
+        return $this->save();
+    }
+
+    /**
+     * Get patient ID
+     *
+     * @return int|null Patient ID
+     * @since 1.0.0
+     */
+    public function get_id() {
+        return $this->id;
+    }
+
+    /**
      * Delete patient (soft delete by changing status)
      *
      * @return bool Success status
@@ -672,6 +721,50 @@ class Eye_Book_Patient {
         }
 
         return $patients;
+    }
+
+    /**
+     * Count patients with filtering
+     *
+     * @param array $args Search arguments
+     * @return int Count
+     * @since 1.0.0
+     */
+    public static function count_patients($args = array()) {
+        global $wpdb;
+
+        $defaults = array(
+            'search' => '',
+            'status' => 'active'
+        );
+
+        $args = wp_parse_args($args, $defaults);
+
+        $where_clauses = array('1=1');
+        $where_values = array();
+
+        // Status filter
+        if ($args['status']) {
+            $where_clauses[] = 'status = %s';
+            $where_values[] = $args['status'];
+        }
+
+        // Search functionality
+        if (!empty($args['search'])) {
+            $search_term = '%' . $wpdb->esc_like($args['search']) . '%';
+            $where_clauses[] = '(first_name LIKE %s OR last_name LIKE %s OR email LIKE %s OR patient_id LIKE %s OR phone LIKE %s)';
+            $where_values = array_merge($where_values, array($search_term, $search_term, $search_term, $search_term, $search_term));
+        }
+
+        $where_clause = implode(' AND ', $where_clauses);
+
+        $query = "SELECT COUNT(*) FROM " . EYE_BOOK_TABLE_PATIENTS . " WHERE $where_clause";
+
+        if (!empty($where_values)) {
+            $query = $wpdb->prepare($query, $where_values);
+        }
+
+        return (int) $wpdb->get_var($query);
     }
 
     /**

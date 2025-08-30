@@ -222,6 +222,55 @@ class Eye_Book_Location {
     }
 
     /**
+     * Create location
+     *
+     * @param array $data Location data
+     * @return bool|int Location ID on success, false on failure
+     * @since 1.0.0
+     */
+    public function create($data = array()) {
+        // Set properties from data
+        foreach ($data as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
+        
+        // Clear the ID to ensure new record
+        $this->id = null;
+        
+        return $this->save();
+    }
+
+    /**
+     * Update location
+     *
+     * @param array $data Location data
+     * @return bool|int Location ID on success, false on failure
+     * @since 1.0.0
+     */
+    public function update($data = array()) {
+        // Set properties from data
+        foreach ($data as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
+        
+        return $this->save();
+    }
+
+    /**
+     * Get location ID
+     *
+     * @return int|null Location ID
+     * @since 1.0.0
+     */
+    public function get_id() {
+        return $this->id;
+    }
+
+    /**
      * Convert object to array
      *
      * @return array

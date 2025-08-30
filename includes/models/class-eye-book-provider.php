@@ -177,6 +177,55 @@ class Eye_Book_Provider {
     }
 
     /**
+     * Create provider
+     *
+     * @param array $data Provider data
+     * @return bool|int Provider ID on success, false on failure
+     * @since 1.0.0
+     */
+    public function create($data = array()) {
+        // Set properties from data
+        foreach ($data as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
+        
+        // Clear the ID to ensure new record
+        $this->id = null;
+        
+        return $this->save();
+    }
+
+    /**
+     * Update provider
+     *
+     * @param array $data Provider data
+     * @return bool|int Provider ID on success, false on failure
+     * @since 1.0.0
+     */
+    public function update($data = array()) {
+        // Set properties from data
+        foreach ($data as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
+        
+        return $this->save();
+    }
+
+    /**
+     * Get provider ID
+     *
+     * @return int|null Provider ID
+     * @since 1.0.0
+     */
+    public function get_id() {
+        return $this->id;
+    }
+
+    /**
      * Convert object to array
      *
      * @return array

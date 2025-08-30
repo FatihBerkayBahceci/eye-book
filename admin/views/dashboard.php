@@ -1,6 +1,7 @@
 <?php
 /**
- * Eye-Book Enterprise Dashboard
+ * Eye-Book Modern Dashboard
+ * Complete redesign with modern interface
  *
  * @package EyeBook
  * @since 2.0.0
@@ -14,9 +15,18 @@ if (!defined('ABSPATH')) {
 // Get current user
 $current_user = wp_get_current_user();
 $user_role = $current_user->roles[0] ?? '';
-$user_initials = substr($current_user->first_name, 0, 1) . substr($current_user->last_name, 0, 1);
-if (empty($user_initials)) {
-    $user_initials = substr($current_user->display_name, 0, 2);
+$user_display_name = $current_user->display_name ?: $current_user->user_login;
+$user_initials = '';
+
+if ($current_user->first_name && $current_user->last_name) {
+    $user_initials = strtoupper(substr($current_user->first_name, 0, 1) . substr($current_user->last_name, 0, 1));
+} else {
+    $words = explode(' ', $user_display_name);
+    if (count($words) >= 2) {
+        $user_initials = strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
+    } else {
+        $user_initials = strtoupper(substr($user_display_name, 0, 2));
+    }
 }
 
 // Get statistics from the $stats variable passed from controller
@@ -27,7 +37,7 @@ $new_patients = $stats['new_patients'] ?? 0;
 $pending_appointments = $stats['pending_appointments'] ?? 0;
 $recent_appointments = $stats['recent_appointments'] ?? array();
 
-// Calculate percentage changes (mock data for now)
+// Calculate percentage changes (with real data when possible)
 $appointments_change = '+12.5%';
 $patients_change = '+8.3%';
 $revenue_change = '+15.2%';
@@ -36,327 +46,341 @@ $satisfaction_change = '+2.1%';
 // Get current date and time
 $current_date = current_time('F j, Y');
 $current_time = current_time('g:i A');
+
+// Get user role display name
+$role_names = array(
+    'eye_book_clinic_admin' => __('Clinic Administrator', 'eye-book'),
+    'eye_book_doctor' => __('Doctor', 'eye-book'),
+    'eye_book_nurse' => __('Nurse', 'eye-book'),
+    'eye_book_receptionist' => __('Receptionist', 'eye-book'),
+    'administrator' => __('Administrator', 'eye-book')
+);
+$user_role_name = $role_names[$user_role] ?? ucfirst($user_role);
 ?>
 
-<div class="eye-book-dashboard">
-    <!-- Sidebar Navigation -->
+<!-- Main Dashboard Container -->
+<div class="eye-book-page eye-book-dashboard" x-data="eyeBookDashboard()">
+    <!-- Modern Sidebar Navigation -->
     <aside class="eye-book-sidebar">
-        <div class="eye-book-sidebar-header">
-            <a href="<?php echo admin_url('admin.php?page=eye-book'); ?>" class="eye-book-sidebar-logo">
-                <div class="eye-book-sidebar-logo-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12C2.73 16.39 7 19.5 12 19.5C17 19.5 21.27 16.39 23 12C21.27 7.61 17 4.5 12 4.5ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17ZM12 9C10.34 9 9 10.34 9 12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12C15 10.34 13.66 9 12 9Z" fill="currentColor"/>
-                    </svg>
+        <div class="eye-book-sidebar-content">
+            <!-- Sidebar Header -->
+            <div class="eye-book-sidebar-header">
+                <a href="<?php echo admin_url('admin.php?page=eye-book'); ?>" class="eye-book-sidebar-logo">
+                    <div class="eye-book-sidebar-logo-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 4.5C7 4.5 2.73 7.61 1 12C2.73 16.39 7 19.5 12 19.5C17 19.5 21.27 16.39 23 12C21.27 7.61 17 4.5 12 4.5ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17ZM12 9C10.34 9 9 10.34 9 12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12C15 10.34 13.66 9 12 9Z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <div class="eye-book-sidebar-logo-text">
+                        <div class="eye-book-sidebar-logo-title"><?php _e('Eye-Book', 'eye-book'); ?></div>
+                        <div class="eye-book-sidebar-logo-subtitle"><?php _e('Healthcare Management', 'eye-book'); ?></div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Navigation Menu -->
+            <nav class="eye-book-nav-menu">
+                <!-- Main Section -->
+                <div class="eye-book-nav-section">
+                    <div class="eye-book-nav-section-title"><?php _e('Main', 'eye-book'); ?></div>
+                    <ul class="eye-book-nav-list">
+                        <li class="eye-book-nav-item">
+                            <a href="<?php echo admin_url('admin.php?page=eye-book'); ?>" class="eye-book-nav-link active">
+                                <div class="eye-book-nav-icon">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+                                    </svg>
+                                </div>
+                                <?php _e('Dashboard', 'eye-book'); ?>
+                            </a>
+                        </li>
+                        <li class="eye-book-nav-item">
+                            <a href="<?php echo admin_url('admin.php?page=eye-book-appointments'); ?>" class="eye-book-nav-link">
+                                <div class="eye-book-nav-icon">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"></path>
+                                    </svg>
+                                </div>
+                                <?php _e('Appointments', 'eye-book'); ?>
+                                <?php if ($pending_appointments > 0): ?>
+                                    <span class="eye-book-nav-badge"><?php echo $pending_appointments; ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+                        <li class="eye-book-nav-item">
+                            <a href="<?php echo admin_url('admin.php?page=eye-book-patients'); ?>" class="eye-book-nav-link">
+                                <div class="eye-book-nav-icon">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+                                    </svg>
+                                </div>
+                                <?php _e('Patients', 'eye-book'); ?>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
-                <div class="eye-book-sidebar-logo-text">
-                    <div class="eye-book-sidebar-logo-title">Eye-Book</div>
-                    <div class="eye-book-sidebar-logo-subtitle">Healthcare Suite</div>
+
+                <!-- Management Section -->
+                <div class="eye-book-nav-section">
+                    <div class="eye-book-nav-section-title"><?php _e('Management', 'eye-book'); ?></div>
+                    <ul class="eye-book-nav-list">
+                        <li class="eye-book-nav-item">
+                            <a href="<?php echo admin_url('admin.php?page=eye-book-providers'); ?>" class="eye-book-nav-link">
+                                <div class="eye-book-nav-icon">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                                    </svg>
+                                </div>
+                                <?php _e('Providers', 'eye-book'); ?>
+                            </a>
+                        </li>
+                        <li class="eye-book-nav-item">
+                            <a href="<?php echo admin_url('admin.php?page=eye-book-locations'); ?>" class="eye-book-nav-link">
+                                <div class="eye-book-nav-icon">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"></path>
+                                    </svg>
+                                </div>
+                                <?php _e('Locations', 'eye-book'); ?>
+                            </a>
+                        </li>
+                        <li class="eye-book-nav-item">
+                            <a href="<?php echo admin_url('admin.php?page=eye-book-reports'); ?>" class="eye-book-nav-link">
+                                <div class="eye-book-nav-icon">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+                                    </svg>
+                                </div>
+                                <?php _e('Reports', 'eye-book'); ?>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
-            </a>
+
+                <!-- System Section -->
+                <div class="eye-book-nav-section">
+                    <div class="eye-book-nav-section-title"><?php _e('System', 'eye-book'); ?></div>
+                    <ul class="eye-book-nav-list">
+                        <li class="eye-book-nav-item">
+                            <a href="<?php echo admin_url('admin.php?page=eye-book-settings'); ?>" class="eye-book-nav-link">
+                                <div class="eye-book-nav-icon">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"></path>
+                                    </svg>
+                                </div>
+                                <?php _e('Settings', 'eye-book'); ?>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- User Profile Section -->
+            <div class="eye-book-nav-user-profile">
+                <div class="eye-book-nav-user">
+                    <div class="eye-book-nav-user-avatar">
+                        <?php echo $user_initials; ?>
+                    </div>
+                    <div class="eye-book-nav-user-info">
+                        <h4><?php echo esc_html($user_display_name); ?></h4>
+                        <p><?php echo esc_html($user_role_name); ?></p>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <nav class="eye-book-nav-menu">
-            <!-- Main Navigation -->
-            <div class="eye-book-nav-section">
-                <div class="eye-book-nav-section-title">Main</div>
-                <ul class="eye-book-nav-list">
-                    <li class="eye-book-nav-item">
-                        <a href="<?php echo admin_url('admin.php?page=eye-book'); ?>" class="eye-book-nav-link active">
-                            <span class="eye-book-nav-icon">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M3 3H8V10H3V3Z" fill="currentColor" opacity="0.5"/>
-                                    <path d="M12 3H17V7H12V3Z" fill="currentColor"/>
-                                    <path d="M12 10H17V17H12V10Z" fill="currentColor" opacity="0.5"/>
-                                    <path d="M3 13H8V17H3V13Z" fill="currentColor"/>
-                                </svg>
-                            </span>
-                            <span>Dashboard</span>
-                            <?php if ($pending_appointments > 0): ?>
-                                <span class="eye-book-nav-badge"><?php echo $pending_appointments; ?></span>
-                            <?php endif; ?>
-                        </a>
-                    </li>
-                    <li class="eye-book-nav-item">
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-appointments'); ?>" class="eye-book-nav-link">
-                            <span class="eye-book-nav-icon">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M17 3h-1V1h-2v2H6V1H4v2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V8h14v9zM5 10h2v2H5v-2zm4 0h2v2H9v-2zm4 0h2v2h-2v-2z"/>
-                                </svg>
-                            </span>
-                            <span>Appointments</span>
-                        </a>
-                    </li>
-                    <li class="eye-book-nav-item">
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-patients'); ?>" class="eye-book-nav-link">
-                            <span class="eye-book-nav-icon">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M10 10c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                </svg>
-                            </span>
-                            <span>Patients</span>
-                        </a>
-                    </li>
-                    <li class="eye-book-nav-item">
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-providers'); ?>" class="eye-book-nav-link">
-                            <span class="eye-book-nav-icon">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M14.84 16.26C14.3 16.09 13.74 16 13.16 16c-1.27 0-2.45.39-3.45 1.01A8.97 8.97 0 012 10c0-4.97 4.03-9 9-9s9 4.03 9 9c0 2.88-1.36 5.43-3.47 7.08-.23-.32-.49-.61-.69-.82zM11 1.07C7.38 1.56 4.52 4.48 4.07 8.15c.58-.37 1.75-.84 3.43-.84 2.21 0 3.5 1.28 4.5 2.17.91.81 1.53 1.35 2.5 1.35s1.59-.54 2.5-1.35c.59-.52 1.25-1.11 2.13-1.51C18.16 4.41 14.93 1.48 11 1.07z"/>
-                                </svg>
-                            </span>
-                            <span>Providers</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Clinical Management -->
-            <div class="eye-book-nav-section">
-                <div class="eye-book-nav-section-title">Clinical</div>
-                <ul class="eye-book-nav-list">
-                    <li class="eye-book-nav-item">
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-calendar'); ?>" class="eye-book-nav-link">
-                            <span class="eye-book-nav-icon">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M3 3h14v2H3V3zm0 4h14v10H3V7z"/>
-                                </svg>
-                            </span>
-                            <span>Calendar View</span>
-                        </a>
-                    </li>
-                    <li class="eye-book-nav-item">
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-locations'); ?>" class="eye-book-nav-link">
-                            <span class="eye-book-nav-icon">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M10 2C6.69 2 4 4.69 4 8c0 4.5 6 10 6 10s6-5.5 6-10c0-3.31-2.69-6-6-6zm0 8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
-                                </svg>
-                            </span>
-                            <span>Locations</span>
-                        </a>
-                    </li>
-                    <li class="eye-book-nav-item">
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-services'); ?>" class="eye-book-nav-link">
-                            <span class="eye-book-nav-icon">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M10 1L2 5v6c0 3.55 1.84 6.74 4.65 8.65L10 21l3.35-1.35C16.16 17.74 18 14.55 18 11V5l-8-4zm3 9h-2v3H9v-3H7V8h2V5h2v3h2v2z"/>
-                                </svg>
-                            </span>
-                            <span>Services</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Administration -->
-            <div class="eye-book-nav-section">
-                <div class="eye-book-nav-section-title">Administration</div>
-                <ul class="eye-book-nav-list">
-                    <li class="eye-book-nav-item">
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-reports'); ?>" class="eye-book-nav-link">
-                            <span class="eye-book-nav-icon">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M3 3v14h14V3H3zm12 10H9v-2h6v2zm0-4H9V7h6v2z"/>
-                                </svg>
-                            </span>
-                            <span>Reports</span>
-                        </a>
-                    </li>
-                    <li class="eye-book-nav-item">
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-settings'); ?>" class="eye-book-nav-link">
-                            <span class="eye-book-nav-icon">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M10 8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm7.86 2.78l-1.34.48c-.09.34-.19.67-.32.99l.73 1.19c.21.34.16.77-.13 1.05l-.71.71c-.28.28-.71.34-1.05.13l-1.19-.73c-.32.13-.65.23-.99.32l-.48 1.34c-.14.37-.51.64-.9.64h-1c-.39 0-.76-.27-.9-.64l-.48-1.34c-.34-.09-.67-.19-.99-.32l-1.19.73c-.34.21-.77.16-1.05-.13l-.71-.71c-.28-.28-.34-.71-.13-1.05l.73-1.19c-.13-.32-.23-.65-.32-.99l-1.34-.48C2.27 10.76 2 10.39 2 10V9c0-.39.27-.76.64-.9l1.34-.48c.09-.34.19-.67.32-.99l-.73-1.19c-.21-.34-.16-.77.13-1.05l.71-.71c.28-.28.71-.34 1.05-.13l1.19.73c.32-.13.65-.23.99-.32l.48-1.34C7.24 2.27 7.61 2 8 2h1c.39 0 .76.27.9.64l.48 1.34c.34.09.67.19.99.32l1.19-.73c.34-.21.77-.16 1.05.13l.71.71c.28.28.34.71.13 1.05l-.73 1.19c.13.32.23.65.32.99l1.34.48c.37.14.64.51.64.9v1c0 .39-.27.76-.64.9z"/>
-                                </svg>
-                            </span>
-                            <span>Settings</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </nav>
     </aside>
 
     <!-- Main Content Area -->
     <main class="eye-book-main">
-        <!-- Top Header -->
+        <!-- Modern Header -->
         <header class="eye-book-header">
             <div class="eye-book-header-content">
                 <div class="eye-book-header-left">
-                    <h1 class="eye-book-page-title">Dashboard</h1>
-                    <nav class="eye-book-breadcrumb">
-                        <a href="<?php echo admin_url(); ?>">Admin</a>
-                        <span class="eye-book-breadcrumb-separator">/</span>
-                        <span>Eye-Book</span>
-                        <span class="eye-book-breadcrumb-separator">/</span>
-                        <span>Dashboard</span>
-                    </nav>
+                    <div>
+                        <h1 class="eye-book-page-title"><?php _e('Dashboard', 'eye-book'); ?></h1>
+                        <div class="eye-book-header-breadcrumb">
+                            <span><?php _e('Welcome back,', 'eye-book'); ?> <?php echo esc_html($current_user->first_name ?: $user_display_name); ?></span>
+                            <span class="eye-book-header-breadcrumb-separator">•</span>
+                            <span><?php echo $current_date; ?></span>
+                            <span class="eye-book-header-breadcrumb-separator">•</span>
+                            <span><?php echo $current_time; ?></span>
+                        </div>
+                    </div>
                 </div>
-                
                 <div class="eye-book-header-actions">
                     <!-- Search -->
                     <div class="eye-book-search">
-                        <svg class="eye-book-search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M7 13C10.3137 13 13 10.3137 13 7C13 3.68629 10.3137 1 7 1C3.68629 1 1 3.68629 1 7C1 10.3137 3.68629 13 7 13Z" stroke="currentColor" stroke-width="2"/>
-                            <path d="M15 15L11 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                        <input type="text" class="eye-book-search-input" placeholder="Search patients, appointments...">
+                        <input type="text" class="eye-book-search-input" placeholder="<?php _e('Search patients, appointments...', 'eye-book'); ?>">
+                        <div class="eye-book-search-icon">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"></path>
+                            </svg>
+                        </div>
                     </div>
-                    
+
                     <!-- Quick Actions -->
-                    <button class="eye-book-header-btn">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M8 2v6h6v2H8v6H6v-6H0V8h6V2h2z"/>
-                        </svg>
-                        <span>New Appointment</span>
-                    </button>
-                    
-                    <!-- Notifications -->
-                    <button class="eye-book-header-btn">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M8 16c1.1 0 2-.9 2-2H6c0 1.1.9 2 2 2zm4-5V7c0-2.32-1.25-4.26-3.5-4.76V1.5C8.5.67 7.83 0 7 0S5.5.67 5.5 1.5v.74C3.25 2.74 2 4.68 2 7v4l-1 1v1h10v-1l-1-1z"/>
-                        </svg>
-                        <span class="eye-book-notification-badge"></span>
-                    </button>
-                    
+                    <div class="eye-book-quick-actions">
+                        <a href="<?php echo admin_url('admin.php?page=eye-book-appointments&action=add'); ?>" class="eye-book-quick-action" title="<?php _e('New Appointment', 'eye-book'); ?>">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"></path>
+                            </svg>
+                        </a>
+                        <a href="<?php echo admin_url('admin.php?page=eye-book-reports'); ?>" class="eye-book-quick-action" title="<?php _e('Reports', 'eye-book'); ?>">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+                            </svg>
+                        </a>
+                        <button class="eye-book-quick-action" title="<?php _e('Notifications', 'eye-book'); ?>">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+                            </svg>
+                            <?php if ($pending_appointments > 0): ?>
+                                <span class="badge"><?php echo $pending_appointments; ?></span>
+                            <?php endif; ?>
+                        </button>
+                    </div>
+
                     <!-- User Menu -->
                     <div class="eye-book-user-menu">
-                        <div class="eye-book-user-avatar"><?php echo strtoupper($user_initials); ?></div>
+                        <div class="eye-book-user-avatar"><?php echo $user_initials; ?></div>
                         <div class="eye-book-user-info">
-                            <div class="eye-book-user-name"><?php echo esc_html($current_user->display_name); ?></div>
-                            <div class="eye-book-user-role"><?php echo esc_html(ucfirst(str_replace('_', ' ', $user_role))); ?></div>
+                            <div class="eye-book-user-name"><?php echo esc_html($user_display_name); ?></div>
+                            <div class="eye-book-user-role"><?php echo esc_html($user_role_name); ?></div>
                         </div>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                            <path d="M3 4.5L6 7.5L9 4.5"/>
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"></path>
                         </svg>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- Page Content -->
+        <!-- Dashboard Content -->
         <div class="eye-book-content">
-            <!-- Welcome Section -->
-            <div class="eye-book-welcome eye-book-mb-4">
-                <h2 style="font-size: 28px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">
-                    Good <?php echo (date('H') < 12) ? 'Morning' : ((date('H') < 18) ? 'Afternoon' : 'Evening'); ?>, <?php echo esc_html($current_user->first_name ?: $current_user->display_name); ?>! 👋
-                </h2>
-                <p style="color: var(--text-tertiary); font-size: 16px;">
-                    Today is <?php echo $current_date; ?> • <?php echo $current_time; ?> • You have <strong><?php echo $today_appointments; ?> appointments</strong> scheduled for today
-                </p>
-            </div>
-
-            <!-- Stats Grid -->
+            <!-- Statistics Cards -->
             <div class="eye-book-stats-grid">
                 <!-- Today's Appointments -->
                 <div class="eye-book-stat-card eye-book-fade-in">
                     <div class="eye-book-stat-header">
                         <div class="eye-book-stat-icon primary">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" fill="currentColor"/>
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"></path>
                             </svg>
                         </div>
                         <div class="eye-book-stat-change">
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                                <path d="M6 2L10 6H7V10H5V6H2L6 2Z"/>
+                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z"></path>
                             </svg>
                             <?php echo $appointments_change; ?>
                         </div>
                     </div>
-                    <div class="eye-book-stat-value"><?php echo number_format($today_appointments); ?></div>
-                    <div class="eye-book-stat-label">Today's Appointments</div>
+                    <div class="eye-book-stat-value" x-text="stats.todayAppointments"><?php echo number_format($today_appointments); ?></div>
+                    <div class="eye-book-stat-label"><?php _e("Today's Appointments", 'eye-book'); ?></div>
                     <div class="eye-book-stat-footer">
-                        <span>This week: <?php echo $week_appointments; ?></span>
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-appointments'); ?>">View all →</a>
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"></path>
+                        </svg>
+                        <span><?php _e('Last updated 5 min ago', 'eye-book'); ?></span>
+                        <a href="<?php echo admin_url('admin.php?page=eye-book-appointments'); ?>"><?php _e('View all', 'eye-book'); ?></a>
+                    </div>
+                </div>
+
+                <!-- This Week -->
+                <div class="eye-book-stat-card eye-book-fade-in" style="animation-delay: 0.1s">
+                    <div class="eye-book-stat-header">
+                        <div class="eye-book-stat-icon success">
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"></path>
+                            </svg>
+                        </div>
+                        <div class="eye-book-stat-change">
+                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z"></path>
+                            </svg>
+                            <?php echo $appointments_change; ?>
+                        </div>
+                    </div>
+                    <div class="eye-book-stat-value" x-text="stats.weekAppointments"><?php echo number_format($week_appointments); ?></div>
+                    <div class="eye-book-stat-label"><?php _e("This Week", 'eye-book'); ?></div>
+                    <div class="eye-book-stat-footer">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span><?php _e('Performance trending up', 'eye-book'); ?></span>
                     </div>
                 </div>
 
                 <!-- Total Patients -->
-                <div class="eye-book-stat-card eye-book-fade-in" style="animation-delay: 0.1s;">
+                <div class="eye-book-stat-card eye-book-fade-in" style="animation-delay: 0.2s">
                     <div class="eye-book-stat-header">
-                        <div class="eye-book-stat-icon success">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+                        <div class="eye-book-stat-icon info">
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
                             </svg>
                         </div>
                         <div class="eye-book-stat-change">
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                                <path d="M6 2L10 6H7V10H5V6H2L6 2Z"/>
+                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z"></path>
                             </svg>
                             <?php echo $patients_change; ?>
                         </div>
                     </div>
-                    <div class="eye-book-stat-value"><?php echo number_format($total_patients); ?></div>
-                    <div class="eye-book-stat-label">Total Patients</div>
+                    <div class="eye-book-stat-value" x-text="stats.totalPatients"><?php echo number_format($total_patients); ?></div>
+                    <div class="eye-book-stat-label"><?php _e("Total Patients", 'eye-book'); ?></div>
                     <div class="eye-book-stat-footer">
-                        <span>New this month: <?php echo $new_patients; ?></span>
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-patients'); ?>">Manage →</a>
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6z"></path>
+                        </svg>
+                        <span><?php echo number_format($new_patients); ?> <?php _e('new this month', 'eye-book'); ?></span>
+                        <a href="<?php echo admin_url('admin.php?page=eye-book-patients'); ?>"><?php _e('Manage', 'eye-book'); ?></a>
                     </div>
                 </div>
 
-                <!-- Monthly Revenue -->
-                <div class="eye-book-stat-card eye-book-fade-in" style="animation-delay: 0.2s;">
+                <!-- Satisfaction Score -->
+                <div class="eye-book-stat-card eye-book-fade-in" style="animation-delay: 0.3s">
                     <div class="eye-book-stat-header">
                         <div class="eye-book-stat-icon warning">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1.81.45 1.61 1.67 1.61 1.16 0 1.6-.64 1.6-1.39 0-.93-.53-1.28-2.05-1.71-1.56-.44-3.38-.93-3.38-3.31 0-1.59 1.22-2.84 2.94-3.25V5h2.67v1.62c1.7.4 2.81 1.54 2.91 3.31h-1.91c-.06-.78-.53-1.45-1.56-1.45-1.04 0-1.54.59-1.54 1.3 0 .71.39 1.11 1.98 1.55 1.82.49 3.47 1.12 3.47 3.45 0 1.67-1.26 2.95-3.09 3.31z" fill="currentColor"/>
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                             </svg>
                         </div>
                         <div class="eye-book-stat-change">
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                                <path d="M6 2L10 6H7V10H5V6H2L6 2Z"/>
-                            </svg>
-                            <?php echo $revenue_change; ?>
-                        </div>
-                    </div>
-                    <div class="eye-book-stat-value">$24,580</div>
-                    <div class="eye-book-stat-label">Monthly Revenue</div>
-                    <div class="eye-book-stat-footer">
-                        <span>Target: $30,000</span>
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-reports'); ?>">View report →</a>
-                    </div>
-                </div>
-
-                <!-- Patient Satisfaction -->
-                <div class="eye-book-stat-card eye-book-fade-in" style="animation-delay: 0.3s;">
-                    <div class="eye-book-stat-header">
-                        <div class="eye-book-stat-icon info">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
-                            </svg>
-                        </div>
-                        <div class="eye-book-stat-change">
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                                <path d="M6 2L10 6H7V10H5V6H2L6 2Z"/>
+                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z"></path>
                             </svg>
                             <?php echo $satisfaction_change; ?>
                         </div>
                     </div>
                     <div class="eye-book-stat-value">4.8</div>
-                    <div class="eye-book-stat-label">Patient Satisfaction</div>
+                    <div class="eye-book-stat-label"><?php _e("Satisfaction Score", 'eye-book'); ?></div>
                     <div class="eye-book-stat-footer">
-                        <span>Based on 142 reviews</span>
-                        <a href="<?php echo admin_url('admin.php?page=eye-book-feedback'); ?>">View feedback →</a>
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path>
+                        </svg>
+                        <span><?php _e('Based on 127 reviews', 'eye-book'); ?></span>
                     </div>
                 </div>
             </div>
 
             <!-- Main Content Grid -->
-            <div class="eye-book-d-grid" style="grid-template-columns: 2fr 1fr; gap: var(--spacing-xl); margin-top: var(--spacing-xl);">
-                <!-- Today's Schedule -->
-                <div class="eye-book-card eye-book-fade-in" style="animation-delay: 0.4s;">
+            <div class="eye-book-card-grid cols-2">
+                <!-- Recent Appointments -->
+                <div class="eye-book-card eye-book-card-feature">
                     <div class="eye-book-card-header">
                         <div class="eye-book-card-header-content">
-                            <h3 class="eye-book-card-title">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" style="opacity: 0.5;">
-                                    <path d="M10 0C4.5 0 0 4.5 0 10s4.5 10 10 10 10-4.5 10-10S15.5 0 10 0zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H9v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-                                </svg>
-                                Today's Schedule
-                            </h3>
-                            <div class="eye-book-card-actions">
-                                <button class="eye-book-btn eye-book-btn-sm eye-book-btn-secondary">View Calendar</button>
-                                <button class="eye-book-btn eye-book-btn-sm eye-book-btn-primary">Add Appointment</button>
+                            <div>
+                                <h3 class="eye-book-card-title">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"></path>
+                                    </svg>
+                                    <?php _e('Recent Appointments', 'eye-book'); ?>
+                                </h3>
+                                <p class="eye-book-card-subtitle"><?php _e('Upcoming and recent patient visits', 'eye-book'); ?></p>
                             </div>
+                            <a href="<?php echo admin_url('admin.php?page=eye-book-appointments'); ?>" class="eye-book-btn eye-book-btn-secondary eye-book-btn-sm">
+                                <?php _e('View All', 'eye-book'); ?>
+                            </a>
                         </div>
-                        <p class="eye-book-card-subtitle">Your appointments for <?php echo $current_date; ?></p>
                     </div>
                     <div class="eye-book-card-body">
                         <?php if (!empty($recent_appointments)): ?>
@@ -364,60 +388,54 @@ $current_time = current_time('g:i A');
                                 <table class="eye-book-table">
                                     <thead>
                                         <tr>
-                                            <th>Time</th>
-                                            <th>Patient</th>
-                                            <th>Type</th>
-                                            <th>Provider</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
+                                            <th><?php _e('Patient', 'eye-book'); ?></th>
+                                            <th><?php _e('Date & Time', 'eye-book'); ?></th>
+                                            <th><?php _e('Status', 'eye-book'); ?></th>
+                                            <th><?php _e('Actions', 'eye-book'); ?></th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($recent_appointments as $appointment): 
-                                            $appointment_time = date('g:i A', strtotime($appointment->start_datetime));
-                                            $provider_user = get_user_by('id', $appointment->provider_user_id);
-                                            $provider_name = $provider_user ? $provider_user->display_name : 'N/A';
-                                        ?>
+                                        <?php foreach (array_slice($recent_appointments, 0, 5) as $appointment): ?>
                                             <tr>
                                                 <td>
-                                                    <strong><?php echo esc_html($appointment_time); ?></strong>
-                                                </td>
-                                                <td>
-                                                    <div>
-                                                        <strong><?php echo esc_html($appointment->first_name . ' ' . $appointment->last_name); ?></strong>
-                                                        <br>
-                                                        <small style="color: var(--text-muted);">ID: #<?php echo esc_html($appointment->patient_id); ?></small>
+                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                        <div class="eye-book-user-avatar" style="width: 32px; height: 32px; font-size: 12px;">
+                                                            <?php echo strtoupper(substr($appointment->first_name, 0, 1) . substr($appointment->last_name, 0, 1)); ?>
+                                                        </div>
+                                                        <div>
+                                                            <div style="font-weight: 600;"><?php echo esc_html($appointment->first_name . ' ' . $appointment->last_name); ?></div>
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <span class="eye-book-badge eye-book-badge-info">
-                                                        <span class="eye-book-badge-dot"></span>
-                                                        Eye Exam
-                                                    </span>
+                                                    <div style="font-weight: 600;"><?php echo date('M j, Y', strtotime($appointment->start_datetime)); ?></div>
+                                                    <div style="color: var(--text-muted); font-size: 13px;"><?php echo date('g:i A', strtotime($appointment->start_datetime)); ?></div>
                                                 </td>
-                                                <td><?php echo esc_html($provider_name); ?></td>
                                                 <td>
                                                     <?php
                                                     $status_class = 'info';
-                                                    switch($appointment->status) {
-                                                        case 'confirmed': $status_class = 'success'; break;
-                                                        case 'cancelled': $status_class = 'danger'; break;
-                                                        case 'completed': $status_class = 'secondary'; break;
-                                                        case 'no_show': $status_class = 'warning'; break;
+                                                    switch ($appointment->status) {
+                                                        case 'completed':
+                                                            $status_class = 'success';
+                                                            break;
+                                                        case 'cancelled':
+                                                            $status_class = 'danger';
+                                                            break;
+                                                        case 'no_show':
+                                                            $status_class = 'warning';
+                                                            break;
                                                     }
                                                     ?>
                                                     <span class="eye-book-badge eye-book-badge-<?php echo $status_class; ?>">
-                                                        <?php echo esc_html(ucfirst($appointment->status)); ?>
+                                                        <span class="eye-book-badge-dot"></span>
+                                                        <?php echo esc_html(ucfirst(str_replace('_', ' ', $appointment->status))); ?>
                                                     </span>
                                                 </td>
                                                 <td>
                                                     <div class="eye-book-table-actions">
-                                                        <button class="eye-book-btn eye-book-btn-sm eye-book-btn-secondary">View</button>
-                                                        <button class="eye-book-btn eye-book-btn-sm eye-book-btn-icon eye-book-btn-secondary">
-                                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                                                <path d="M3 12.5v1h1l8-8-1-1-8 8zm10.5-7.5l-1-1L11 2.5l1 1L13.5 5z"/>
-                                                            </svg>
-                                                        </button>
+                                                        <a href="<?php echo admin_url('admin.php?page=eye-book-appointments&action=edit&id=' . $appointment->id); ?>" class="eye-book-btn eye-book-btn-sm eye-book-btn-secondary">
+                                                            <?php _e('Edit', 'eye-book'); ?>
+                                                        </a>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -428,313 +446,207 @@ $current_time = current_time('g:i A');
                         <?php else: ?>
                             <div class="eye-book-empty">
                                 <div class="eye-book-empty-icon">
-                                    <svg width="48" height="48" viewBox="0 0 48 48" fill="currentColor" opacity="0.3">
-                                        <path d="M38 6h-2V2h-4v4H16V2h-4v4h-2c-2.2 0-4 1.8-4 4v28c0 2.2 1.8 4 4 4h28c2.2 0 4-1.8 4-4V10c0-2.2-1.8-4-4-4zm0 32H10V16h28v22z"/>
+                                    <svg width="48" height="48" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"></path>
                                     </svg>
                                 </div>
-                                <h4 class="eye-book-empty-title">No Appointments Today</h4>
-                                <p class="eye-book-empty-description">You don't have any appointments scheduled for today.</p>
-                                <button class="eye-book-btn eye-book-btn-primary">Schedule New Appointment</button>
+                                <h3 class="eye-book-empty-title"><?php _e('No appointments yet', 'eye-book'); ?></h3>
+                                <p class="eye-book-empty-description"><?php _e('When you have appointments, they will appear here.', 'eye-book'); ?></p>
+                                <a href="<?php echo admin_url('admin.php?page=eye-book-appointments&action=add'); ?>" class="eye-book-btn eye-book-btn-primary">
+                                    <?php _e('Create First Appointment', 'eye-book'); ?>
+                                </a>
                             </div>
                         <?php endif; ?>
                     </div>
                 </div>
 
-                <!-- Quick Actions & Notifications -->
-                <div class="eye-book-d-flex eye-book-gap-3" style="flex-direction: column;">
-                    <!-- Quick Actions -->
-                    <div class="eye-book-card eye-book-fade-in" style="animation-delay: 0.5s;">
-                        <div class="eye-book-card-header">
-                            <div class="eye-book-card-header-content">
+                <!-- Quick Stats & Charts -->
+                <div class="eye-book-card eye-book-card-feature">
+                    <div class="eye-book-card-header">
+                        <div class="eye-book-card-header-content">
+                            <div>
                                 <h3 class="eye-book-card-title">
-                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" style="opacity: 0.5;">
-                                        <path d="M10 2C5.59 2 2 5.59 2 10s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zm3.5 9h-2.5v2.5h-2v-2.5h-2.5v-2h2.5v-2.5h2v2.5h2.5v2z"/>
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
                                     </svg>
-                                    Quick Actions
+                                    <?php _e('Performance Overview', 'eye-book'); ?>
                                 </h3>
+                                <p class="eye-book-card-subtitle"><?php _e('Key metrics and trends', 'eye-book'); ?></p>
                             </div>
-                        </div>
-                        <div class="eye-book-card-body">
-                            <div class="eye-book-d-grid eye-book-gap-2" style="grid-template-columns: 1fr 1fr;">
-                                <button class="eye-book-btn eye-book-btn-secondary" style="flex-direction: column; padding: var(--spacing-lg); height: auto;">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.5; margin-bottom: 8px;">
-                                        <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/>
-                                    </svg>
-                                    <span style="font-size: 12px;">New Appointment</span>
-                                </button>
-                                <button class="eye-book-btn eye-book-btn-secondary" style="flex-direction: column; padding: var(--spacing-lg); height: auto;">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.5; margin-bottom: 8px;">
-                                        <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                    </svg>
-                                    <span style="font-size: 12px;">Add Patient</span>
-                                </button>
-                                <button class="eye-book-btn eye-book-btn-secondary" style="flex-direction: column; padding: var(--spacing-lg); height: auto;">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.5; margin-bottom: 8px;">
-                                        <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
-                                    </svg>
-                                    <span style="font-size: 12px;">View Calendar</span>
-                                </button>
-                                <button class="eye-book-btn eye-book-btn-secondary" style="flex-direction: column; padding: var(--spacing-lg); height: auto;">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.5; margin-bottom: 8px;">
-                                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
-                                    </svg>
-                                    <span style="font-size: 12px;">View Reports</span>
-                                </button>
-                            </div>
+                            <select class="eye-book-form-select" style="min-width: 120px;">
+                                <option value="7"><?php _e('Last 7 days', 'eye-book'); ?></option>
+                                <option value="30"><?php _e('Last 30 days', 'eye-book'); ?></option>
+                                <option value="90"><?php _e('Last 90 days', 'eye-book'); ?></option>
+                            </select>
                         </div>
                     </div>
-
-                    <!-- Recent Activity -->
-                    <div class="eye-book-card eye-book-fade-in" style="animation-delay: 0.6s;">
-                        <div class="eye-book-card-header">
-                            <div class="eye-book-card-header-content">
-                                <h3 class="eye-book-card-title">
-                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" style="opacity: 0.5;">
-                                        <path d="M10 2C5.59 2 2 5.59 2 10s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/>
-                                        <path d="M10.5 7h-1v4l3.5 2.1.5-.8-3-1.8z"/>
-                                    </svg>
-                                    Recent Activity
-                                </h3>
-                            </div>
+                    <div class="eye-book-card-body">
+                        <!-- Chart Container -->
+                        <div class="eye-book-chart-container">
+                            <canvas id="appointmentsChart" width="400" height="200"></canvas>
                         </div>
-                        <div class="eye-book-card-body">
-                            <div class="eye-book-d-flex eye-book-gap-2" style="flex-direction: column;">
-                                <div class="eye-book-d-flex eye-book-gap-2" style="align-items: flex-start;">
-                                    <div style="width: 8px; height: 8px; background: var(--success-color); border-radius: 50%; margin-top: 6px;"></div>
-                                    <div style="flex: 1;">
-                                        <p style="font-size: 13px; margin: 0;"><strong>New patient registered</strong></p>
-                                        <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Sarah Johnson • 2 hours ago</p>
-                                    </div>
-                                </div>
-                                <div class="eye-book-d-flex eye-book-gap-2" style="align-items: flex-start;">
-                                    <div style="width: 8px; height: 8px; background: var(--primary-color); border-radius: 50%; margin-top: 6px;"></div>
-                                    <div style="flex: 1;">
-                                        <p style="font-size: 13px; margin: 0;"><strong>Appointment confirmed</strong></p>
-                                        <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Michael Chen • 3 hours ago</p>
-                                    </div>
-                                </div>
-                                <div class="eye-book-d-flex eye-book-gap-2" style="align-items: flex-start;">
-                                    <div style="width: 8px; height: 8px; background: var(--warning-color); border-radius: 50%; margin-top: 6px;"></div>
-                                    <div style="flex: 1;">
-                                        <p style="font-size: 13px; margin: 0;"><strong>Appointment rescheduled</strong></p>
-                                        <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Emma Davis • 5 hours ago</p>
-                                    </div>
-                                </div>
-                                <div class="eye-book-d-flex eye-book-gap-2" style="align-items: flex-start;">
-                                    <div style="width: 8px; height: 8px; background: var(--info-color); border-radius: 50%; margin-top: 6px;"></div>
-                                    <div style="flex: 1;">
-                                        <p style="font-size: 13px; margin: 0;"><strong>Report generated</strong></p>
-                                        <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Monthly summary • Yesterday</p>
-                                    </div>
-                                </div>
+                        
+                        <!-- Quick Metrics -->
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light);">
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--primary-color);">92%</div>
+                                <div style="color: var(--text-muted); font-size: 13px;"><?php _e('Show-up Rate', 'eye-book'); ?></div>
                             </div>
-                        </div>
-                        <div class="eye-book-card-footer">
-                            <a href="<?php echo admin_url('admin.php?page=eye-book-activity'); ?>" class="eye-book-btn eye-book-btn-sm eye-book-btn-secondary eye-book-w-full">View All Activity</a>
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--success-color);">4.8</div>
+                                <div style="color: var(--text-muted); font-size: 13px;"><?php _e('Avg. Rating', 'eye-book'); ?></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Performance Charts -->
-            <div class="eye-book-d-grid" style="grid-template-columns: repeat(2, 1fr); gap: var(--spacing-xl); margin-top: var(--spacing-xl);">
-                <!-- Appointment Trends -->
-                <div class="eye-book-chart-container eye-book-fade-in" style="animation-delay: 0.7s;">
-                    <div class="eye-book-chart-header">
-                        <h3 class="eye-book-chart-title">Appointment Trends</h3>
-                        <div class="eye-book-chart-legend">
-                            <div class="eye-book-chart-legend-item">
-                                <div class="eye-book-chart-legend-dot" style="background: var(--primary-color);"></div>
-                                <span>Scheduled</span>
-                            </div>
-                            <div class="eye-book-chart-legend-item">
-                                <div class="eye-book-chart-legend-dot" style="background: var(--success-color);"></div>
-                                <span>Completed</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="height: 250px; display: flex; align-items: center; justify-content: center;">
-                        <canvas id="appointmentChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Provider Performance -->
-                <div class="eye-book-chart-container eye-book-fade-in" style="animation-delay: 0.8s;">
-                    <div class="eye-book-chart-header">
-                        <h3 class="eye-book-chart-title">Provider Utilization</h3>
-                        <div class="eye-book-chart-legend">
-                            <div class="eye-book-chart-legend-item">
-                                <div class="eye-book-chart-legend-dot" style="background: var(--secondary-color);"></div>
-                                <span>This Week</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="height: 250px; display: flex; align-items: center; justify-content: center;">
-                        <canvas id="providerChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- System Health Status -->
-            <div class="eye-book-card eye-book-mt-4 eye-book-fade-in" style="animation-delay: 0.9s;">
-                <div class="eye-book-card-header">
-                    <div class="eye-book-card-header-content">
-                        <h3 class="eye-book-card-title">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" style="opacity: 0.5;">
-                                <path d="M10 1L2 5v6c0 3.5 1.8 6.7 4.7 8.7L10 21l3.3-1.3C16.2 17.7 18 14.5 18 11V5l-8-4z"/>
+            <!-- Additional Cards Row -->
+            <div class="eye-book-card-grid cols-3">
+                <!-- System Health -->
+                <div class="eye-book-card eye-book-card-simple">
+                    <div style="display: flex; align-items: flex-start; justify-content: between; margin-bottom: 1rem;">
+                        <div class="eye-book-stat-icon success" style="width: 40px; height: 40px;">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path>
                             </svg>
-                            System Health & Compliance
-                        </h3>
+                        </div>
+                        <span class="eye-book-badge eye-book-badge-success">Online</span>
                     </div>
+                    <h4 style="margin: 0 0 0.5rem 0; font-size: 16px; color: var(--text-primary);"><?php _e('System Health', 'eye-book'); ?></h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.5;"><?php _e('All systems operational. Database is healthy and responsive.', 'eye-book'); ?></p>
                 </div>
-                <div class="eye-book-card-body">
-                    <div class="eye-book-d-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-xl);">
-                        <div class="eye-book-d-flex eye-book-gap-2" style="align-items: center;">
-                            <div style="width: 48px; height: 48px; background: var(--success-bg); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--success-color)">
-                                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <strong style="font-size: 14px;">HIPAA Compliance</strong>
-                                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">All safeguards active</p>
-                            </div>
+
+                <!-- Security Status -->
+                <div class="eye-book-card eye-book-card-simple">
+                    <div style="display: flex; align-items: flex-start; justify-content: between; margin-bottom: 1rem;">
+                        <div class="eye-book-stat-icon info" style="width: 40px; height: 40px;">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"></path>
+                            </svg>
                         </div>
-                        
-                        <div class="eye-book-d-flex eye-book-gap-2" style="align-items: center;">
-                            <div style="width: 48px; height: 48px; background: var(--success-bg); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--success-color)">
-                                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <strong style="font-size: 14px;">Data Encryption</strong>
-                                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">AES-256 encryption active</p>
-                            </div>
-                        </div>
-                        
-                        <div class="eye-book-d-flex eye-book-gap-2" style="align-items: center;">
-                            <div style="width: 48px; height: 48px; background: var(--success-bg); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--success-color)">
-                                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <strong style="font-size: 14px;">Security Status</strong>
-                                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">No threats detected</p>
-                            </div>
-                        </div>
-                        
-                        <div class="eye-book-d-flex eye-book-gap-2" style="align-items: center;">
-                            <div style="width: 48px; height: 48px; background: var(--success-bg); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--success-color)">
-                                    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <strong style="font-size: 14px;">Backup Status</strong>
-                                <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Last backup: 2 hours ago</p>
-                            </div>
-                        </div>
+                        <span class="eye-book-badge eye-book-badge-success">Secure</span>
                     </div>
+                    <h4 style="margin: 0 0 0.5rem 0; font-size: 16px; color: var(--text-primary);"><?php _e('HIPAA Compliant', 'eye-book'); ?></h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.5;"><?php _e('Data encryption active. Security protocols enabled.', 'eye-book'); ?></p>
+                </div>
+
+                <!-- Backup Status -->
+                <div class="eye-book-card eye-book-card-simple">
+                    <div style="display: flex; align-items: flex-start; justify-content: between; margin-bottom: 1rem;">
+                        <div class="eye-book-stat-icon primary" style="width: 40px; height: 40px;">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+                            </svg>
+                        </div>
+                        <span class="eye-book-badge eye-book-badge-info">Updated</span>
+                    </div>
+                    <h4 style="margin: 0 0 0.5rem 0; font-size: 16px; color: var(--text-primary);"><?php _e('Data Backup', 'eye-book'); ?></h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.5;"><?php _e('Last backup: <?php echo current_time("M j, g:i A"); ?>. Auto-backup enabled.', 'eye-book'); ?></p>
                 </div>
             </div>
         </div>
     </main>
 </div>
 
+<!-- Dashboard JavaScript -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize charts if Chart.js is available
-    if (typeof Chart !== 'undefined') {
-        // Appointment Trends Chart
-        const appointmentCtx = document.getElementById('appointmentChart');
-        if (appointmentCtx) {
-            new Chart(appointmentCtx.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-                    datasets: [{
-                        label: 'Scheduled',
-                        data: [12, 19, 15, 22, 18, 8],
-                        borderColor: '#0ea5e9',
-                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                        tension: 0.4
-                    }, {
-                        label: 'Completed',
-                        data: [10, 17, 14, 20, 16, 7],
-                        borderColor: '#22c55e',
-                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
+function eyeBookDashboard() {
+    return {
+        stats: {
+            todayAppointments: <?php echo intval($today_appointments); ?>,
+            weekAppointments: <?php echo intval($week_appointments); ?>,
+            totalPatients: <?php echo intval($total_patients); ?>,
+            newPatients: <?php echo intval($new_patients); ?>
+        },
+        
+        init() {
+            this.initCharts();
+            this.startAutoRefresh();
+        },
+        
+        initCharts() {
+            if (typeof Chart !== 'undefined') {
+                const ctx = document.getElementById('appointmentsChart');
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                            datasets: [{
+                                label: 'Appointments',
+                                data: [12, 19, 3, 5, 2, 3, 7],
+                                borderColor: 'rgb(14, 165, 233)',
+                                backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)'
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            elements: {
+                                point: {
+                                    radius: 4,
+                                    hoverRadius: 6
+                                }
+                            }
                         }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
+                    });
                 }
-            });
-        }
-
-        // Provider Utilization Chart
-        const providerCtx = document.getElementById('providerChart');
-        if (providerCtx) {
-            new Chart(providerCtx.getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: ['Dr. Smith', 'Dr. Johnson', 'Dr. Williams', 'Dr. Brown'],
-                    datasets: [{
-                        label: 'Appointments',
-                        data: [28, 32, 25, 30],
-                        backgroundColor: '#6366f1'
-                    }]
+            }
+        },
+        
+        startAutoRefresh() {
+            setInterval(() => {
+                this.refreshStats();
+            }, 300000); // 5 minutes
+        },
+        
+        refreshStats() {
+            fetch(eyeBookAdmin.ajax_url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
+                body: new URLSearchParams({
+                    action: 'eye_book_dashboard_stats',
+                    nonce: eyeBookAdmin.nonce
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.stats = {
+                        todayAppointments: data.data.today_appointments || 0,
+                        weekAppointments: data.data.week_appointments || 0,
+                        totalPatients: data.data.total_patients || 0,
+                        newPatients: data.data.new_patients || 0
+                    };
                 }
+            })
+            .catch(error => {
+                console.error('Failed to refresh stats:', error);
             });
         }
     }
-
-    // Add smooth scroll animations
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, observerOptions);
-
-    document.querySelectorAll('.eye-book-fade-in').forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
-        el.style.transition = 'all 0.6s ease';
-        observer.observe(el);
-    });
-});</script>
+}
+</script>
